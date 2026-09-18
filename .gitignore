@@ -1,0 +1,24 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+build/
+dist/
+
+# Cache directory for saved API responses
+cache/
+
+# OS/editor junk
+.DS_Store
+.vscode/
+.idea/
+*.swp

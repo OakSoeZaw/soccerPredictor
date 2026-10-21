@@ -5,9 +5,9 @@ splited
 
 import pandas as pd
 from src.data.clean import load_data
+from src.evaluation.evaluate import evaluate_model
 from src.features.engineer import add_rolling_features
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, log_loss
 
 df = add_rolling_features(load_data())
 
@@ -42,52 +42,44 @@ training_df = df[df["Season"].isin([
     "2020/21",
     "2021/22",
     "2022/23",
-    "2023/24"
 ])].copy()
 
-backtest_df = df[df["Season"] == "2024/25"].copy()
+validation_df = df[df["Season"] == "2023/24"].copy()
+
+test_df = df[df["Season"] == "2024/25"].copy()
 
 missing = training_df[training_df[feature_columns].isna().any(axis=1)]
 # print(missing[["MatchDate", "HomeTeam", "AwayTeam"] + feature_columns])
 
-# print(training_df.shape)
 training_df = training_df.dropna(subset=feature_columns)
-# print(training_df.shape)
-
-# printDataSet(backtest_df, training_df)
-
+validation_df = validation_df.dropna(subset = feature_columns)
+test_df = test_df.dropna(subset = feature_columns)
 
 X_train = training_df[feature_columns]
 y_train = training_df["FullTimeResult"]
 
-X_test = backtest_df[feature_columns]
-y_test = backtest_df["FullTimeResult"]
+X_validation = validation_df[feature_columns]
+y_validation = validation_df["FullTimeResult"]
 
-model = LogisticRegression(
-    max_iter=1000,
-    class_weight="balanced"
-)
+# printDataSet(backtest_df, training_df)
+
+'''
+Fitting the model using Logistic Regression
+'''
+
+model = LogisticRegression(max_iter=1500)
 
 model.fit(X_train, y_train)
-probabilities = model.predict_proba(X_test)
 
-print("Class order:", model.classes_)
-print(probabilities[:5])
+y_pred = model.predict(X_validation)
+y_proba = model.predict_proba(X_validation)
 
-y_pred = model.predict(X_test)
+evaluate_model(
+    y_true = y_validation,
+    y_pred = y_pred,
+    y_proba= y_proba,
+    classes = model.classes_,
+    y_train = y_train
+)
 
-labels = ["H", "D", "A"]
-cm = confusion_matrix(y_test, y_pred, labels = labels)
-print(pd.DataFrame(cm, index=[f"true{l}" for l in labels], columns = [f"pred{l}" for l in labels ]))
 
-print("Log loss: ", log_loss(y_test, probabilities, labels=model.classes_))
-
-print("=============================")
-print("Predicted results:")
-print(pd.Series(y_pred).value_counts())
-
-print("Actual results:")
-print(y_test.value_counts())
-
-print("Model accuracy:", accuracy_score(y_test, y_pred))
-print(classification_report(y_test, y_pred, zero_division=0))

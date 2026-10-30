@@ -7,9 +7,11 @@ import pandas as pd
 from src.data.clean import load_data
 from src.evaluation.evaluate import evaluate_model
 from src.features.engineer import add_rolling_features
+from src.features.elo import add_elo_features
 from sklearn.linear_model import LogisticRegression
 
 df = add_rolling_features(load_data())
+df = add_elo_features(df)
 
 # HELPER FUNCTIONS
 def printDataSet(backtest_df, training_df):
@@ -33,8 +35,15 @@ def printDataSet(backtest_df, training_df):
 feature_columns = [
     "Home_AvgGoalsFor5",
     "Home_AvgGoalsAgainst5",
+    "Home_AvgShotsFor",
+    "Home_AvgShotsAgainst",
     "Away_AvgGoalsFor5",
-    "Away_AvgGoalsAgainst5"
+    "Away_AvgGoalsAgainst5",
+    "Away_AvgShotsFor",
+    "Away_AvgShotsAgainst",
+    "Home_Elo",
+    "Away_Elo",
+    "EloDiff"
 ]
 
 
@@ -47,6 +56,7 @@ training_df = df[df["Season"].isin([
 validation_df = df[df["Season"] == "2023/24"].copy()
 
 test_df = df[df["Season"] == "2024/25"].copy()
+print(training_df.columns.tolist())
 
 missing = training_df[training_df[feature_columns].isna().any(axis=1)]
 # print(missing[["MatchDate", "HomeTeam", "AwayTeam"] + feature_columns])
@@ -67,9 +77,9 @@ y_validation = validation_df["FullTimeResult"]
 Fitting the model using Logistic Regression
 '''
 
-model = LogisticRegression(max_iter=1500)
-
+model = LogisticRegression(max_iter=5000)
 model.fit(X_train, y_train)
+
 
 y_pred = model.predict(X_validation)
 y_proba = model.predict_proba(X_validation)
@@ -81,5 +91,4 @@ evaluate_model(
     classes = model.classes_,
     y_train = y_train
 )
-
 
